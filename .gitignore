@@ -17,3 +17,4 @@ playgrounds/*
 results/*
 *.log
 scripts/*
+.env

@@ -1,0 +1,22 @@
+Prompts: goal - generate better hypothesis
+1. Define hypothesis: an educated guess that tries to explain an observed phemoneno (data -> theory/explanation). The key is explanatory power
+2. CoT Prompting
+3. Good hypothesis: inductive reasoning, comminiation, synthesis with existing knowledge (optional)
+4. Generalizability: the current prompt in HypoGeniC is specific to each dataset
+5. Try prompting method of AutoRules
+6. Self critisism
+
+Dataset
+1. Make the system easier to adapt to new datasets in various format
+
+
+Game plan:
+Dataset: Retweet & President election
+
+Experiments:
+Model: Gemini
+1. Benchmark: run HypoGeniC with the existing methods, with best-accuracy hypothesis
+2. Summarize benchmark results:
+    - Classification accuracy on test & OOD
+3. Prompt changes
+4. Evaluations
