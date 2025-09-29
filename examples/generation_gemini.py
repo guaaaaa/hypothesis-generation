@@ -1,17 +1,7 @@
-import argparse
 import logging
-import re
 import time
-import pickle
-import sys
 import os
-import math
 import json
-
-import random
-from typing import Callable, Tuple, Union
-import torch
-import numpy as np
 
 from hypogenic.extract_label import extract_label_register
 
@@ -106,7 +96,7 @@ def main():
         # You can also set it directly here for testing:
         # api_key = "your_api_key_here"
     
-    api = GeminiWrapper(model=model_name, api_key=api_key)
+    api = GeminiWrapper(model=model_name)
     print(f"✅ Gemini API initialized with model: {model_name}")
 
     # If implementing a new task, you need to create a new extract_label function and pass in the Task constructor.

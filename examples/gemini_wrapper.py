@@ -1,7 +1,6 @@
 import os
 import time
 import random
-from typing import Dict, List, Optional
 
 from google import genai
 from google.genai import types
@@ -11,21 +10,14 @@ class GeminiWrapper:
     def __init__(
         self,
         model,
-        max_retry= 5,
-        min_backoff=1.0,
-        max_backoff=30.0,
-        api_key=None,
-        **_,
+        max_retry = 3,
+        min_backoff = 1.0,
+        max_backoff = 30.0,
     ):
         self.model_name = model
         self.max_retry = max_retry
         self.min_backoff = min_backoff
         self.max_backoff = max_backoff
-
-        # Configure client (env var fallback)
-        self.api_key = api_key or os.environ.get("GEMINI_API_KEY")
-        if not self.api_key:
-            raise ValueError("Missing API key. Pass api_key=... or set GEMINI_API_KEY.")
 
     def _messages_to_prompt(self, messages):
         parts = []
@@ -35,17 +27,10 @@ class GeminiWrapper:
             parts.append(f"{role}: {content}")
         return "\n\n".join(parts)
 
-    def _extract_text(self, response) -> str:
+    def _extract_text(self, response):
         """
-        Best-effort text extraction compatible with the GenAI SDK.
-        Prefer response.output_text; fall back to aggregating candidate parts.
+        Extract text from the response.
         """
-        # 1) Preferred: flattened text
-        text = getattr(response, "output_text", None)
-        if text:
-            return text
-
-        # 2) Fallback: walk candidates->content->parts
         texts = []
         for c in getattr(response, "candidates", []) or []:
             content = getattr(c, "content", None)
@@ -57,46 +42,46 @@ class GeminiWrapper:
                         texts.append(t)
         if texts:
             return "\n".join(texts)
+        else:
+            raise RuntimeError("No text returned.")
 
-        # 3) Nothing usable: surface finish_reason/prompt_feedback
-        finish = None
-        if getattr(response, "candidates", None):
-            finish = getattr(response.candidates[0], "finish_reason", None)
-        feedback = getattr(response, "prompt_feedback", None)
-        raise RuntimeError(f"No text returned. finish_reason={finish}, prompt_feedback={feedback}")
 
-    def generate(
+    def _generate(
         self,
         messages,
-        cache_seed,
         **kwargs,
     ):
-        prompt = self._messages_to_prompt(messages)
-        # prompt = "What is a hypothesis"
-        client = genai.Client(api_key=self.api_key)
+        # Client Setup
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if not api_key:
+            raise ValueError("Missing API key. Pass api_key=... or set GEMINI_API_KEY.")
 
-        # Build config (safe defaults; caller can override via kwargs)
+        client = genai.Client(api_key=api_key)
+        
+        # Prompt Setup
+        prompt = self._messages_to_prompt(messages)
+
+        # API Call Config Setup
         gen_config_kwargs = dict(
-            max_output_tokens=kwargs.get("max_tokens", 2048),
-            temperature=kwargs.get("temperature", 0.2),
-            top_p=kwargs.get("top_p", 0.95),
-            top_k=kwargs.get("top_k", 40),
+            max_output_tokens=kwargs.get("max_tokens", 100000),
+            temperature=kwargs.get("temperature", 1e-5),
         )
 
-        # Optional: allow caller to pass a small thinking budget if desired
+        # Disable thinking
         thinking_budget = kwargs.get("thinking_budget", None)
         if thinking_budget is not None:
             try:
                 gen_config_kwargs["thinking_config"] = types.ThinkingConfig(
-                    thinking_budget=0  # e.g., 0 to disable thinking
+                    thinking_budget=0
                 )
             except Exception:
-                # If SDK/model doesn't support thinking_config, just ignore it gracefully
+                print("Thinking config not supported by the model. Ignoring...")
                 pass
 
         generation_config = types.GenerateContentConfig(**gen_config_kwargs)
 
         last_error = None
+        # Retry Loop for API Calls
         for attempt in range(self.max_retry):
             try:
                 print("\n" + "=" * 60)
@@ -133,23 +118,31 @@ class GeminiWrapper:
 
         raise RuntimeError(f"Gemini generation failed after {self.max_retry} attempts: {last_error}")
 
+
     def batched_generate(
         self,
         messages,
-        max_concurrent=3,  # placeholder; currently sequential
         cache_seed=None,
         **kwargs,
     ):
+        """
+        Sequentially processes a list of messages using self._generate.
+        No concurrency is used.
+        """
         if len(messages) == 1:
-            return [self.generate(messages[0], cache_seed=cache_seed, **kwargs)]
+            return [self._generate(messages[0], cache_seed=cache_seed, **kwargs)]
 
         print(f"\n🔄 BATCH GENERATION: Processing {len(messages)} requests")
         print("=" * 60)
+
         results = []
         for i, msg in enumerate(messages, 1):
             print(f"\n📦 Processing batch item {i}/{len(messages)}")
-            results.append(self.generate(msg, cache_seed=cache_seed, **kwargs))
+            result = self._generate(msg, cache_seed=cache_seed, **kwargs)
+            results.append(result)
             print(f"✅ Completed batch item {i}/{len(messages)}")
+
         print(f"\n🎉 BATCH GENERATION COMPLETE: {len(results)} responses generated")
         print("=" * 60 + "\n")
+        
         return results
