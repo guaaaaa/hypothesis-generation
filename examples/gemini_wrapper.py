@@ -14,7 +14,7 @@ class GeminiWrapper:
         min_backoff = 1.0,
         max_backoff = 30.0,
     ):
-        self.model_name = model
+        self.model = model
         self.max_retry = max_retry
         self.min_backoff = min_backoff
         self.max_backoff = max_backoff
@@ -93,7 +93,7 @@ class GeminiWrapper:
                 print("-" * 40)
 
                 response = client.models.generate_content(
-                    model=self.model_name,
+                    model=self.model,
                     contents=prompt,
                     config=generation_config,
                 )
@@ -117,6 +117,25 @@ class GeminiWrapper:
                 time.sleep(delay)
 
         raise RuntimeError(f"Gemini generation failed after {self.max_retry} attempts: {last_error}")
+
+    def generate(
+        self,
+        messages,
+        cache_seed=None,
+        **kwargs,
+    ):
+        if cache_seed is not None:
+            return self.api_with_cache.generate(
+                messages=messages,
+                model=self.model,
+                cache_seed=cache_seed,
+                **kwargs,
+            )
+        return self._generate(
+            messages,
+            model=self.model,
+            **kwargs,
+        )
 
 
     def batched_generate(
