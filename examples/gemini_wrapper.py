@@ -19,6 +19,11 @@ class GeminiWrapper:
         self.min_backoff = min_backoff
         self.max_backoff = max_backoff
 
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if not api_key:
+            raise ValueError("Missing API key. Pass api_key=... or set GEMINI_API_KEY.")
+        self.api = genai.Client(api_key=api_key)
+
     def _messages_to_prompt(self, messages):
         parts = []
         for m in messages:
@@ -51,13 +56,6 @@ class GeminiWrapper:
         messages,
         **kwargs,
     ):
-        # Client Setup
-        api_key = os.environ.get("GEMINI_API_KEY")
-        if not api_key:
-            raise ValueError("Missing API key. Pass api_key=... or set GEMINI_API_KEY.")
-
-        client = genai.Client(api_key=api_key)
-        
         # Prompt Setup
         prompt = self._messages_to_prompt(messages)
 
@@ -87,7 +85,7 @@ class GeminiWrapper:
                 print("🚀 GEMINI API CALL")
                 print("-" * 40)
 
-                response = client.models.generate_content(
+                response = self.api.models.generate_content(
                     model=self.model,
                     contents=prompt,
                     config=generation_config,
