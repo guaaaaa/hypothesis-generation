@@ -84,12 +84,7 @@ class GeminiWrapper:
         # Retry Loop for API Calls
         for attempt in range(self.max_retry):
             try:
-                print("\n" + "=" * 60)
                 print("🚀 GEMINI API CALL")
-                print("=" * 60)
-                print("\n📝 INPUT PROMPT:")
-                print("-" * 40)
-                print(prompt)
                 print("-" * 40)
 
                 response = client.models.generate_content(
