@@ -5,6 +5,33 @@ import random
 from google import genai
 from google.genai import types
 
+MODEL_COSTS = {
+    'gemini-2.5-flash': {
+        'input': 0.30,
+        'output': 2.50,
+    },
+    'gemini-2.5-flash-preview': {
+        'input': 0.30,
+        'output': 2.50,
+    },
+    'gemini-2.5-flash-lite': {
+        'input': 0.10,
+        'output': 0.40,
+    },
+    'gemini-2.5-flash-lite-preview': {
+        'input': 0.10,
+        'output': 0.40,
+    },
+    'gemini-2.0-flash': {
+        'input': 0.10,
+        'output': 0.40,
+    },
+    'gemini-2.0-flash-lite': {
+        'input': 0.075,
+        'output': 0.30,
+    },
+}
+
 
 class GeminiWrapper:
     def __init__(
@@ -23,6 +50,7 @@ class GeminiWrapper:
         if not api_key:
             raise ValueError("Missing API key. Pass api_key=... or set GEMINI_API_KEY.")
         self.api = genai.Client(api_key=api_key)
+        self.total_cost = 0
 
     def _messages_to_prompt(self, messages):
         parts = []
@@ -50,6 +78,11 @@ class GeminiWrapper:
         else:
             raise RuntimeError("No text returned.")
 
+    def get_cost(self):
+        return self.total_cost
+    
+    def reset_cost(self):
+        self.total_cost = 0
 
     def _generate(
         self,
@@ -92,6 +125,19 @@ class GeminiWrapper:
                 )
 
                 text = self._extract_text(response)
+
+                # Calculate cost based on token usage
+                input_tokens = getattr(response.usage_metadata, 'prompt_token_count', 0)
+                output_tokens = getattr(response.usage_metadata, 'candidates_token_count', 0)
+                    
+                # Get model pricing
+                input_cost = input_tokens * MODEL_COSTS[self.model]['input'] / 1000000
+                output_cost = output_tokens * MODEL_COSTS[self.model]['output'] / 1000000
+                self.total_cost += input_cost + output_cost
+                    
+                print(f"\n💰 COST INFO:")
+                print(f"Input tokens: {input_tokens}, Output tokens: {output_tokens}")
+                print(f"Cost: ${input_cost + output_cost:.6f}, Total cost: ${self.total_cost:.6f}")
 
                 print("\n✅ API RESPONSE:")
                 print("-" * 40)

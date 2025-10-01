@@ -53,17 +53,17 @@ def main():
     max_num_hypotheses = 3 
     output_folder = f"./outputs/retweet/{model_name}/hyp_{max_num_hypotheses}/"
     old_hypothesis_file = None
-    num_init = 10                    # number of examples to use for initializing hypotheses
-    num_train = 75                   # number of examples to use for training
+    num_init = 5                    # number of examples to use for initializing hypotheses
+    num_train = 5                    # number of examples to use for training
     num_test = 25
     num_val = 25
     k = 2                           # select top k hypotheses to evaluate accuracy
     alpha = 5e-1                    # exploration parameter
-    update_batch_size = 10          # number of examples to use for updating hypotheses
+    update_batch_size = 1          # number of examples to use for updating hypotheses
     num_hypotheses_to_update = 1    # number of hypotheses to update per example
-    save_every_10_examples = 10
-    init_batch_size = 10             # number of examples to use for initializing hypotheses (Just use the same as num_init)
-    init_hypotheses_per_batch = 10   # number of hypotheses to generate per batch
+    save_every_10_examples = 10 
+    init_batch_size = 1             # number of examples to use for initializing hypotheses (Just use the same as num_init)
+    init_hypotheses_per_batch = 1   # number of hypotheses to generate per batch
     cache_seed = None
     temperature = 1e-5
     max_tokens = 100000
@@ -164,6 +164,8 @@ def main():
 
     # print experiment info
     total_time = time.time() - start_time
+    total_cost = api.get_cost()
+    print(f"Total cost: {total_cost}")
     print(f"\n🎉 EXPERIMENT COMPLETED!")
 
 if __name__ == "__main__":

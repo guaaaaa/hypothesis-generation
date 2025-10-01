@@ -20,3 +20,10 @@ Model: Gemini
     - Classification accuracy on test & OOD
 3. Prompt changes
 4. Evaluations
+
+
+Tasks:
+1. IORefine paper
+2. IORefine VS HypoGeniC
+3. Understand code of IORefine & HypoGeniC
+4. Run experiments on Retweet
